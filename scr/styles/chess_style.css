@@ -1,0 +1,43 @@
+.cells_black,.cells_white,.cells_coordinat{
+    font-size: 8vh;
+    text-align: center;
+    height: 10vh;
+    width: 10vh;
+
+    min-height: 30px;
+    min-width: 30px;
+
+
+    
+}
+.cells_black{
+    background-color:rgb(118, 150, 86);
+  
+}
+
+.cells_white{
+    background-color: rgb(238, 238, 210);
+}
+.cells_coordinat{
+    
+    font-size: 5vh;
+
+    text-align: right;
+    
+    display:block;
+}
+.cells_number{
+    line-height: 20vh;
+}
+
+.chess_img{
+    height: 10vh;
+    background-size: 10vh;
+    text-align: center;
+    align-items: center;
+    
+    
+}
+
+
+

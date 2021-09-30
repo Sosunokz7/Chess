@@ -1,0 +1,24 @@
+{
+  "name": "chess",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sosunokz7/Chess.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Sosunokz7/Chess/issues"
+  },
+  "homepage": "https://github.com/Sosunokz7/Chess#readme",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "requirejs": "^2.3.6"
+  }
+}
