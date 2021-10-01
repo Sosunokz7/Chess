@@ -17,6 +17,9 @@ define(['../../node_modules/lodash/lodash.min'], function (_) {
                 console.log('Its not your turn now');
                 return false;
             }
+
+            if(_.isEqual(positionNewCells,objSelfFigure.position))
+                return false;
             while (!_.isEqual(positionNewCells, objSelfFigure.position)){//Поход до нужной позиции 
                 for (let i in objSelfFigure.position) {
                     if (objSelfFigure.position[i] < positionNewCells[i])//Если позиция фигуры меньше то + 1 
