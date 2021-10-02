@@ -1,7 +1,8 @@
 define([
-    '../../node_modules/lodash/lodash.min',
-    'chess_classes',
-    'convertPositionToObject'
+    './../../node_modules/lodash/lodash.min',
+    './chess_classes',
+    './lib/convertPositionToObject',
+
 ], function (_, chessClass, convertPositionToObject) {
 
     class GameStarter {

@@ -1,10 +1,14 @@
-define(['../../node_modules/lodash/lodash.min'], function (_) {
+define(['../../node_modules/lodash/lodash.min',
+    './lib/range'
+
+], function (_, range) {
 
     class ChessPieces {
 
         constructor(color, { collum, row }) {
             this.color = color;
             this.position = { collum, row };
+
         }
 
         position() {
@@ -18,9 +22,11 @@ define(['../../node_modules/lodash/lodash.min'], function (_) {
                 return false;
             }
 
-            if(_.isEqual(positionNewCells,objSelfFigure.position))
+            if (_.isEqual(positionNewCells, objSelfFigure.position))
                 return false;
-            while (!_.isEqual(positionNewCells, objSelfFigure.position)){//Поход до нужной позиции 
+
+            let startPosition = _.cloneDeep(this.position);
+            while (!_.isEqual(positionNewCells, objSelfFigure.position)) {//Поход до нужной позиции 
                 for (let i in objSelfFigure.position) {
                     if (objSelfFigure.position[i] < positionNewCells[i])//Если позиция фигуры меньше то + 1 
                         ++objSelfFigure.position[i];
@@ -29,14 +35,18 @@ define(['../../node_modules/lodash/lodash.min'], function (_) {
 
                 }
 
+                if (!this.possibleFigureMove(positionNewCells, startPosition))
+                    return false;
+
                 let roadCells = document.getElementById(`[${objSelfFigure.position.collum},${objSelfFigure.position.row}]`);//Получение клетки на которой мы находимся
                 if (!_.isNull(roadCells.firstChild)) {//Есть ли на этой клетке фигура 
                     let arrClassFigure = Array.from(roadCells.firstChild.classList);
-                    if (_.isEqual(positionNewCells, objSelfFigure.position) && !(arrClassFigure.includes(whoseMove))) {//Проверка на цвет фигуры и на совпадение ее позиции с нашей конечной   
+                    if (_.isEqual(positionNewCells, objSelfFigure.position) && !(arrClassFigure.includes(whoseMove))) {//Проверка на цвет фигуры и на совпадение ее позиции с нашей целью   
                         _.remove(arrPieces, (item, index, arr) => {
                             return _.isEqual(positionNewCells, item.position);
                         });
                         eventNewCells.target.remove();
+                        this.dead();
                         return true
                     }
                     console.log('You cant walk through the figures')
@@ -47,14 +57,16 @@ define(['../../node_modules/lodash/lodash.min'], function (_) {
             }
             return true;
 
+        }
 
+        CheckingСellEnemy(objSelfFigure, whoseMove, arrPieces, positionNewCells){
 
         }
 
         move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
 
             let doomSelfFigure = document.querySelector('.selected')
-            
+
             if (this.generalСheckMoves(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) == false)
                 return;
 
@@ -63,7 +75,9 @@ define(['../../node_modules/lodash/lodash.min'], function (_) {
 
         }
 
-
+        possibleFigureMove(positionNewCells, startPosition) {
+            return true;
+        }
         dead() {
 
         }
@@ -76,14 +90,28 @@ define(['../../node_modules/lodash/lodash.min'], function (_) {
 
         constructor(color, { collum, row }) {
             super(color, { collum, row })
+            this.numberMovesSelfPawn = 0;
         }
 
 
         getUrl() {
-
             return this.color == 'white' ? 'whitePawn.png' : 'blackPawn.png'
         }
 
+        possibleFigureMove(positionNewCells, startPosition) {
+            this.numberMovesSelfPawn++
+            
+            let quantityAheadСell=Math.abs(startPosition.collum -positionNewCells.collum)
+            if (startPosition.row != positionNewCells.row)
+                return false;
+            else if (this.numberMovesSelfPawn <= 2 && quantityAheadСell<=2)
+                return true;
+            else if (quantityAheadСell<=1)
+                return true
+            console.log('The pawn moves 2 squares only for the first time')
+            return false;
+
+        }
 
     }
 
