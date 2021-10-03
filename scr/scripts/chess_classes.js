@@ -1,84 +1,109 @@
 define(['../../node_modules/lodash/lodash.min',
-    './lib/range'
 
-], function (_, range) {
+], function (_) {
 
     class ChessPieces {
 
         constructor(color, { collum, row }) {
             this.color = color;
             this.position = { collum, row };
-
+            this.cellsForMove = [];
         }
 
         position() {
             return this.position;
         }
 
-        generalСheckMoves(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
+        checkingСellEnemy() {
+            this.cellsForMove = [];
+            for (var i = 1; i < 5; i++) {
+                let selfPosition = _.cloneDeep(this.position);
+                let roadCells;
+
+                do {
+                    if (!_.isEqual(selfPosition, this.position)) //Проверка, чтобы не записать клетку на которой уже стоит фигура
+                        this.cellsForMove.push(_.cloneDeep(selfPosition));
+
+                    this.getDirection(i, selfPosition);//Алгоритм по которому смотрим как может двигаться фигура 
+                    roadCells = document.getElementById(`[${selfPosition.collum},${selfPosition.row}]`);//Получение клетки на которой мы находимся 
+                    if (!_.isNull(roadCells)) {//Существует ли такая клетка
+                        if (!_.isNull(roadCells.firstChild)) {//Есть ли на этой клетке фигура 
+                            this.cellsForMove.push(_.cloneDeep(selfPosition));
+                            break;
+                        }
+                    }
+                    else break;
+
+
+
+                } while (this.сheckExistCell(roadCells))
+            }
+        }
+
+        getDirection(index, selfPosition) {
+            switch (index) {
+                case 1: {
+                    return selfPosition.collum--, selfPosition.row--;
+                }
+                case 2: {
+                    return selfPosition.collum++, selfPosition.row--;
+                }
+                case 3: {
+                    return selfPosition.collum--, selfPosition.row++;
+                }
+                case 4: {
+                    return selfPosition.collum++, selfPosition.row++;
+                }
+
+            }
+        }
+
+        сheckExistCell(roadCells) {
+            return !_.isNull(roadCells)
+        }
+
+        checkFigureOnWay(roadCells, whoseMove, arrPieces) {
+            let arrClassFigure = Array.from(roadCells.firstChild.classList);
+            return arrClassFigure.includes(whoseMove)
+        }
+
+        move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
 
             if (objSelfFigure.color != whoseMove) {
                 console.log('Its not your turn now');
                 return false;
             }
 
-            if (_.isEqual(positionNewCells, objSelfFigure.position))
-                return false;
-
-            let startPosition = _.cloneDeep(this.position);
-            while (!_.isEqual(positionNewCells, objSelfFigure.position)) {//Поход до нужной позиции 
-                for (let i in objSelfFigure.position) {
-                    if (objSelfFigure.position[i] < positionNewCells[i])//Если позиция фигуры меньше то + 1 
-                        ++objSelfFigure.position[i];
-                    else if (objSelfFigure.position[i] > positionNewCells[i])//Если позиция фигуры больше то - 1 
-                        --objSelfFigure.position[i];
-
-                }
-
-                if (!this.possibleFigureMove(positionNewCells, startPosition))
-                    return false;
-
-                let roadCells = document.getElementById(`[${objSelfFigure.position.collum},${objSelfFigure.position.row}]`);//Получение клетки на которой мы находимся
-                if (!_.isNull(roadCells.firstChild)) {//Есть ли на этой клетке фигура 
-                    let arrClassFigure = Array.from(roadCells.firstChild.classList);
-                    if (_.isEqual(positionNewCells, objSelfFigure.position) && !(arrClassFigure.includes(whoseMove))) {//Проверка на цвет фигуры и на совпадение ее позиции с нашей целью   
-                        _.remove(arrPieces, (item, index, arr) => {
-                            return _.isEqual(positionNewCells, item.position);
-                        });
-                        eventNewCells.target.remove();
-                        this.dead();
-                        return true
-                    }
-                    console.log('You cant walk through the figures')
-                    return false;
-
-                }
-
-            }
-            return true;
-
-        }
-
-        CheckingСellEnemy(objSelfFigure, whoseMove, arrPieces, positionNewCells){
-
-        }
-
-        move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
-
             let doomSelfFigure = document.querySelector('.selected')
+            let cell = this.cellsForMove.find(function (item, index, arr) {
+                return _.isEqual(item, positionNewCells);
+            })
 
-            if (this.generalСheckMoves(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) == false)
-                return;
+            if (!_.isUndefined(cell)) {
+                let figureToCell = arrPieces.find(function (item, index, arr) {
+                    return _.isEqual(item.position, cell);
+                })
 
-            eventNewCells.currentTarget.append(doomSelfFigure)
-            return true;
+                if (!_.isUndefined(figureToCell)) {
+                    if (figureToCell.color != whoseMove) {
+                        eventNewCells.target.remove();
+                        _.remove(arrPieces, figureToCell)
+                    }
+                    else return false;
 
-        }
 
-        possibleFigureMove(positionNewCells, startPosition) {
-            return true;
-        }
-        dead() {
+                }
+                eventNewCells.currentTarget.append(doomSelfFigure)
+                objSelfFigure.position = cell;
+                arrPieces.push(objSelfFigure)//Добавление новой фигуры в массив
+                arrPieces.forEach((item, index, arr) => {
+                    item.checkingСellEnemy()
+                });
+                return true;
+            }
+            return false;
+
+
 
         }
 
@@ -100,13 +125,13 @@ define(['../../node_modules/lodash/lodash.min',
 
         possibleFigureMove(positionNewCells, startPosition) {
             this.numberMovesSelfPawn++
-            
-            let quantityAheadСell=Math.abs(startPosition.collum -positionNewCells.collum)
+
+            let quantityAheadСell = Math.abs(startPosition.collum - positionNewCells.collum)
             if (startPosition.row != positionNewCells.row)
                 return false;
-            else if (this.numberMovesSelfPawn <= 2 && quantityAheadСell<=2)
+            else if (this.numberMovesSelfPawn <= 2 && quantityAheadСell <= 2)
                 return true;
-            else if (quantityAheadСell<=1)
+            else if (quantityAheadСell <= 1)
                 return true
             console.log('The pawn moves 2 squares only for the first time')
             return false;

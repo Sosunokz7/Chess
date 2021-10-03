@@ -86,6 +86,9 @@ define([
             super(color)
             this._whoseMove = color;
             this._createEventsDragovers();
+            this._piecesSpawner.arrPieces.forEach((item, index, arr) => {
+                item.checkingСellEnemy()
+            });
         }
 
         _createEventsDragovers() {
@@ -103,16 +106,11 @@ define([
                 });
             }
             //#endregion        
-
+            //#region  drag event for CELLS
             for (const value of this.cells) {//Для клеток 
 
                 value.addEventListener('dragstart', (event) => {
-
-                    if (event.target.parentElement.id != 'x1')//Проверка выхода из div Cells к основному div
-                        event.target.parentElement.classList.add('positionBeforeMoving');
-                    else
-                        event.target.parentElement.classList.add('positionBeforeMoving');
-
+                   event.target.parentElement.classList.add('positionBeforeMoving');
                 })
 
                 value.addEventListener('dragend', (event) => {
@@ -123,10 +121,7 @@ define([
                     event.preventDefault();
                 })
 
-
                 value.addEventListener('drop', (eventCellsForNewPosition) => {
-
-
                     let startingPosition = document.querySelector('.positionBeforeMoving');//Позция до перемещение   
                     let positionBeforeMoving = convertPositionToObject(startingPosition.id);
 
@@ -136,16 +131,12 @@ define([
 
                     if (!_.isUndefined(selfFigure)) {
                         let copySelfFigure = _.cloneDeep(selfFigure);//Копия фигуры 
-                        this._piecesSpawner.arrPieces.splice(this._piecesSpawner.arrPieces.indexOf(selfFigure), 1)//Удаление фигуры
-
                         let positionNewCells = convertPositionToObject(eventCellsForNewPosition.currentTarget.id);//Позиция куда идет фигура 
+                        _.remove(this._piecesSpawner.arrPieces, selfFigure)
                         eventCellsForNewPosition = selfFigure.move(eventCellsForNewPosition, selfFigure, this._whoseMove, this._piecesSpawner.arrPieces, positionNewCells);//Перемещение фигуры 
 
-                        if (!_.isUndefined(eventCellsForNewPosition)) {//Проверка дошла ли фигура 
-
-                            this._whoseMove = this._whoseMove == 'white' ? 'black' : 'white'//Смена цвет хода 
-                            this._piecesSpawner.arrPieces.push(selfFigure)//Добавление новой фигуры в массив
-
+                        if (eventCellsForNewPosition) {//Проверка дошла ли фигура 
+                            this._whoseMove = this._whoseMove == 'white' ? 'black' : 'white'//Смена цвет хода   
                             return;
                         }
                         this._piecesSpawner.arrPieces.push(copySelfFigure);//Возврат старой фигуры в массив
@@ -157,6 +148,7 @@ define([
                 })
 
             }
+            //#endregion
 
         }
 
