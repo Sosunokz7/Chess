@@ -6,6 +6,8 @@ define(['../../node_modules/lodash/lodash.min',
 
         constructor(color, { collum, row }) {
             this.color = color;
+            console.log(color)
+            console.log({ collum, row });
             this.position = { collum, row };
             this.cellsForMove = [];
             this.numberOfChecks = 4;//Количество условий для проверки
@@ -99,6 +101,7 @@ define(['../../node_modules/lodash/lodash.min',
 
     }
 
+    //#region  Chess
 
     class Pawns extends ChessPieces {
 
@@ -115,9 +118,9 @@ define(['../../node_modules/lodash/lodash.min',
 
         getDirection(index, selfPosition) {
             if (this.color == 'white')
-                selfPosition.collum--;
+                selfPosition.collum++;
             else {
-                selfPosition.collum++
+                selfPosition.collum--;
             }
             switch (index) {
                 case 1: {
@@ -160,19 +163,6 @@ define(['../../node_modules/lodash/lodash.min',
 
 
     }
-    //#region  Chess
-
-    class Rook extends ChessPieces {
-
-        constructor(color, { collum, row }) {
-            super(color, { collum, row })
-        }
-
-        getUrl() {
-
-            return this.color == 'white' ? 'whiteRook.png' : 'blackRook.png'
-        }
-    }
 
 
     class Elephant extends ChessPieces {
@@ -203,6 +193,39 @@ define(['../../node_modules/lodash/lodash.min',
             }
         }
     }
+
+
+    class Rook extends ChessPieces {
+
+        constructor(color, { collum, row }) {
+            super(color, { collum, row })
+        }
+
+        getUrl() {
+
+            return this.color == 'white' ? 'whiteRook.png' : 'blackRook.png'
+        }
+
+        getDirection(index, selfPosition, roadCells) {
+            switch (index) {
+                case 1: {
+                    return selfPosition.collum, selfPosition.row--;
+                }
+                case 2: {
+                    return selfPosition.collum, selfPosition.row++;
+                }
+                case 3: {
+                    return selfPosition.collum--, selfPosition.row;
+                }
+                case 4: {
+                    return selfPosition.collum++, selfPosition.row;
+                }
+
+            }
+        }
+
+    }
+
 
     class Horse extends ChessPieces {
         constructor(color, { collum, row }) {
@@ -271,11 +294,10 @@ define(['../../node_modules/lodash/lodash.min',
         }
 
         _inntrChessPiceToHtml({ collum, row, currenStep, step }, urlName, color) {
-
+           console.log(`[${collum},${row + currenStep}]`);
             document.getElementById(`[${collum},${row + currenStep}]`).innerHTML += `<div class='chess_img ${color}'  id=${urlName.substring(0, urlName.indexOf('.'))} style='background-image:url(${this.pathChessSprites}/${urlName});' draggable ='true'></div>`;
             return currenStep + step;
         }
-
 
     }
 

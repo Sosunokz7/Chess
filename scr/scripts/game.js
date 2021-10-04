@@ -15,13 +15,19 @@ define([
                 this._drawCells();
 
                 this._piecesSpawner = new chessClass.PiecesSpawner(this.cells, color);
-                this._drawChessPices(color, this.possibleСolors.find((value, i, arr) => value != color))
+                if (this._color == 'white')
+                    this._drawChessPices('black', 'white')
+                else {
+
+                    this._drawChessPices('black', 'white')
+                }
+
 
             }
             else
                 throw Error(`The player's color is only black or white but not ${color}`);
         }
-
+        //#region  properties
         get _mainDiv() {
             return document.querySelector('.main');
         }
@@ -39,30 +45,56 @@ define([
         static get chessBoard() {
             return this._piecesSpawner;
         }
+    
+        //#endregion
+        
+        _drawCells() {
+            //#region  function spawner
+            const spawner = function (collumId, collum) {
+                let _collum;
+                let rowsId = 1;
+                let className1, className2;
+                if (this._color == 'black') {
+                    _collum = collum + 1;
+                    collumId++
+                }
+                else {
+                    _collum = collum - 1;
+                    collumId--
+                }
 
+                this._mainDiv.innerHTML += `<div class="cells_coordinat"><span class='cells_number'>${_collum}<span></div>`
+                for (let row = 0; row < 4; row++) {
+                    if (collum % 2 == 1) {
+                        className1 = 'cells_white'
+                        className2 = 'cells_black'
 
-        _drawCells() {//Рисование клеток
-            let [rowsId, collumId] = [1, 0];
+                    }
+                    else {
+                        className1 = 'cells_black'
+                        className2 = 'cells_white'
+                    }
+                    this._mainDiv.innerHTML += `<div class="${className1}"  id='[${collumId},${rowsId++}]'></div><div class="${className2}"  id='[${collumId},${rowsId++}]'></div>`;
+                }
+                return collumId;
 
-            for (let collum = 0; collum < 8; collum++) {
-                this._mainDiv.innerHTML += `<div class="cells_coordinat"><span class='cells_number'>${collum + 1}<span></div>`;
-                collumId++;
-                rowsId = 1;
-                if (collum % 2 == this.possibleСolors.indexOf(this._color))
-                    for (let row = 0; row < 4; row++)
-                        this._mainDiv.innerHTML += `<div class="cells_black" id='[${collumId},${rowsId++}]'></div><div class="cells_white" id='[${collumId},${rowsId++}]'></div>`;
+            }.bind(this);
+            //#endregion
 
-                else
-                    for (let row = 0; row < 4; row++)
-                        this._mainDiv.innerHTML += `<div class="cells_white"  id='[${collumId},${rowsId++}]'></div><div class="cells_black"  id='[${collumId},${rowsId++}]'></div>`;
+            if (this._color == 'black') {
+                let collumId = 0;
+                for (let collum = 0; collum < 8; collum++)
+                    collumId = spawner(collumId, collum)
+            }
+            else {
+                let collumId = 9;
+                for (let collum = 9; collum > 1; collum--)
+                    collumId = spawner(collumId, collum)
 
             }
             this.cells = document.querySelectorAll('.cells_black,.cells_white');
-
-
-        }
-
-        _drawChessPices(selfColor, frandColor) {//Создание фигур
+        }//Рисование клеток
+        _drawChessPices(selfColor, frandColor) {
             [{ color: frandColor, collum: 1 }, { color: selfColor, collum: 6 }].forEach((item, i, arr) => {
 
                 this._piecesSpawner.spawn(item.color, { collum: item.collum + 1, row: 1, step: 1 }, 8, new FactoryPawn());
@@ -75,7 +107,7 @@ define([
                 this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 5, step: 1 }, 1, new FactoryKing());
 
             })
-        }
+        }//Создание фигур
 
 
     }
@@ -84,7 +116,7 @@ define([
 
         constructor(color) {
             super(color)
-            this._whoseMove = color;
+            this._whoseMove = 'white';
             this._createEventsDragovers();
             this._piecesSpawner.arrPieces.forEach((item, index, arr) => {
                 item.checkingСellEnemy()
@@ -110,7 +142,7 @@ define([
             for (const value of this.cells) {//Для клеток 
 
                 value.addEventListener('dragstart', (event) => {
-                   event.target.parentElement.classList.add('positionBeforeMoving');
+                    event.target.parentElement.classList.add('positionBeforeMoving');
                 })
 
                 value.addEventListener('dragend', (event) => {
