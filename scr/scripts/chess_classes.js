@@ -270,12 +270,42 @@ define(['../../node_modules/lodash/lodash.min',
     class Queen extends ChessPieces {
         constructor(color, { collum, row }) {
             super(color, { collum, row })
+            this.numberOfChecks = 8;
         }
-
         getUrl() {
-
             return this.color == 'white' ? 'whiteQueen.png' : 'blackQueen.png'
         }
+
+        getDirection(index, selfPosition, roadCells) {
+            switch (index) {
+                case 1: {
+                    return selfPosition.collum--, selfPosition.row--;
+                }
+                case 2: {
+                    return selfPosition.collum++, selfPosition.row++;
+                }
+                case 3: {
+                    return selfPosition.collum--, selfPosition.row++;
+                }
+                case 4: {
+                    return selfPosition.collum++, selfPosition.row--;
+                }
+                case 5: {
+                    return selfPosition.collum, selfPosition.row--;
+                }
+                case 6: {
+                    return selfPosition.collum, selfPosition.row++;
+                }
+                case 7: {
+                    return selfPosition.collum--, selfPosition.row;
+                }
+                case 8: {
+                    return selfPosition.collum++, selfPosition.row;
+                }
+
+            }
+        }
+
     }
 
     class King extends ChessPieces {
