@@ -1,13 +1,11 @@
 define(['../../node_modules/lodash/lodash.min',
-
-], function (_) {
+    './lib/range'
+], function (_, range) {
 
     class ChessPieces {
 
         constructor(color, { collum, row }) {
             this.color = color;
-            console.log(color)
-            console.log({ collum, row });
             this.position = { collum, row };
             this.cellsForMove = [];
             this.numberOfChecks = 4;//Количество условий для проверки
@@ -226,19 +224,49 @@ define(['../../node_modules/lodash/lodash.min',
 
     }
 
-
     class Horse extends ChessPieces {
         constructor(color, { collum, row }) {
             super(color, { collum, row })
+            this.numberOfChecks = 8;
         }
 
         getUrl() {
 
             return this.color == 'white' ? 'whiteHorse.png' : 'blackHorse.png'
         }
+
+        getDirection(index, selfPosition, roadCells) {
+            if (range.between(1, 2, index))
+                selfPosition.collum += 2
+            else if (range.between(3, 4, index))
+                selfPosition.collum -= 2
+            else if (range.between(5, 6, index))
+                selfPosition.row += 2
+            else if (range.between(7, 8, index))
+                selfPosition.row -= 2
+
+            switch (true) {
+                case index==1|| index==4: {
+                    return selfPosition.row--;
+                }
+                case index==2|| index==3: {
+                    return selfPosition.row++;
+                }
+                case index==5|| index==7: {
+                    return selfPosition.collum--;
+                }
+                case index==6|| index==8: {
+                    return selfPosition.collum++;
+                }
+            }
+        }
+
+        cycleConditions(roadCells, whileIndex) {
+            return whileIndex<1;
+        }
     }
 
-
+    
     class Queen extends ChessPieces {
         constructor(color, { collum, row }) {
             super(color, { collum, row })
@@ -294,7 +322,6 @@ define(['../../node_modules/lodash/lodash.min',
         }
 
         _inntrChessPiceToHtml({ collum, row, currenStep, step }, urlName, color) {
-           console.log(`[${collum},${row + currenStep}]`);
             document.getElementById(`[${collum},${row + currenStep}]`).innerHTML += `<div class='chess_img ${color}'  id=${urlName.substring(0, urlName.indexOf('.'))} style='background-image:url(${this.pathChessSprites}/${urlName});' draggable ='true'></div>`;
             return currenStep + step;
         }
