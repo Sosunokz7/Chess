@@ -10,6 +10,7 @@ define(['../../node_modules/lodash/lodash.min',
             this.cellsForMove = [];
             this.numberOfChecks = 4;//Количество условий для проверки
             this.strokeNumberMoves = 0;//Количество сделанных ходов вибронной фигурой
+            this.type = 'figure';
         }
 
         position() {
@@ -56,22 +57,39 @@ define(['../../node_modules/lodash/lodash.min',
         }
 
         move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
-
             if (objSelfFigure.color != whoseMove) {
                 console.log('Its not your turn now');
                 return false;
             }
 
             let doomSelfFigure = document.querySelector('.selected')
-            let cell = this.cellsForMove.find(function (item, index, arr) {
-                return _.isEqual(item, positionNewCells);
-            })//Поиск разрешенных ходов 
+            let cell = this.cellsForMove.find((item, index, arr)=> _.isEqual(item, positionNewCells))//Поиск разрешенных ходов 
+
             console.log(this.cellsForMove);
             if (!_.isUndefined(cell)) {
-                let figureToCell = arrPieces.find(function (item, index, arr) {
-                    return _.isEqual(item.position, cell);
-                })//Поиск фигуру на клетке
+                if (objSelfFigure.type == 'king') {//Если ходит король
+                    let possibleMove = arrPieces.some(function (item, index, arr) {//Проверка безопасности поля 
+                        if (item.color != objSelfFigure.color) {
+                            if (item.type == 'pawns') {
+                                let _itemCollum;
+                                if (item.color == 'white')
+                                    _itemCollum = item.position.collum + 1
+                                else
+                                    _itemCollum = item.position.collum - 1
+                                if ((_.isEqual(cell, { collum: _itemCollum, row: item.position.row - 1 }) || _.isEqual(cell, { collum: _itemCollum, row: item.position.row + 1 })))
+                                    return true;
+                            }
+                            else if (item.cellsForMove.some((element) => { return _.isEqual(element, cell) }))
+                                return true;
 
+                            return false;
+                        }
+                    })
+                    if (possibleMove)
+                        return false;
+                }
+                
+                let figureToCell = arrPieces.find((item, index, arr) =>_.isEqual(item.position, cell))//Поиск фигуру на клетке
                 if (!_.isUndefined(figureToCell)) {
                     if (figureToCell.color != whoseMove) {
                         eventNewCells.target.remove();
@@ -79,22 +97,17 @@ define(['../../node_modules/lodash/lodash.min',
                     }
                     else return false;
 
-
                 }
+                //#region  end move
                 eventNewCells.currentTarget.append(doomSelfFigure)
                 objSelfFigure.position = cell;
                 ++objSelfFigure.strokeNumberMoves;//Добавление 1 к сделанных ходо этой фигуры
                 arrPieces.push(objSelfFigure)//Добавление новой фигуры в массив
-                arrPieces.forEach((item, index, arr) => {
-                    item.checkingСellEnemy()
-                });
-
+                arrPieces.forEach((item, index, arr) => item.checkingСellEnemy());
                 return true;
+                //#endregion
             }
             return false;
-
-
-
         }
 
     }
@@ -106,7 +119,7 @@ define(['../../node_modules/lodash/lodash.min',
 
         constructor(color, { collum, row }) {
             super(color, { collum, row })
-
+            this.type = 'pawns';
 
         }
 
@@ -117,9 +130,9 @@ define(['../../node_modules/lodash/lodash.min',
         getDirection(index, selfPosition) {
             if (this.color == 'white')
                 selfPosition.collum++;
-            else {
+            else
                 selfPosition.collum--;
-            }
+
             switch (index) {
                 case 1: {
                     return selfPosition.row;
@@ -134,7 +147,6 @@ define(['../../node_modules/lodash/lodash.min',
 
 
         }
-
         checkForAddToArr(selfPosition, whileIndex, roadCells) {
             let figureFront = _.isNull(roadCells.firstChild);
             if ((selfPosition.row == this.position.row) && (figureFront)) {//Если мы двигаемся по горизонтали, то на нашем пути не должно быть других фигур
@@ -148,18 +160,11 @@ define(['../../node_modules/lodash/lodash.min',
 
 
             return false;
-
-
-
-
         }
 
         cycleConditions(roadCells, whileIndex) {
             return whileIndex < 2;
-
         }
-
-
     }
 
 
@@ -169,7 +174,6 @@ define(['../../node_modules/lodash/lodash.min',
         }
 
         getUrl() {
-
             return this.color == 'white' ? 'whiteElephant.png' : 'blackElephant.png'
         }
 
@@ -246,27 +250,26 @@ define(['../../node_modules/lodash/lodash.min',
                 selfPosition.row -= 2
 
             switch (true) {
-                case index==1|| index==4: {
+                case index == 1 || index == 4: {
                     return selfPosition.row--;
                 }
-                case index==2|| index==3: {
+                case index == 2 || index == 3: {
                     return selfPosition.row++;
                 }
-                case index==5|| index==7: {
+                case index == 5 || index == 7: {
                     return selfPosition.collum--;
                 }
-                case index==6|| index==8: {
+                case index == 6 || index == 8: {
                     return selfPosition.collum++;
                 }
             }
         }
 
         cycleConditions(roadCells, whileIndex) {
-            return whileIndex<1;
+            return whileIndex < 1;
         }
     }
 
-    
     class Queen extends ChessPieces {
         constructor(color, { collum, row }) {
             super(color, { collum, row })
@@ -311,11 +314,48 @@ define(['../../node_modules/lodash/lodash.min',
     class King extends ChessPieces {
         constructor(color, { collum, row }) {
             super(color, { collum, row })
+            this.numberOfChecks = 8;
+            this.type = 'king';
         }
 
         getUrl() {
 
             return this.color == 'white' ? 'whiteKing.png' : 'blackKing.png'
+        }
+
+        getDirection(index, selfPosition, roadCells) {
+            switch (index) {
+                case 1: {
+                    return selfPosition.collum--, selfPosition.row--;
+                }
+                case 2: {
+                    return selfPosition.collum--, selfPosition.row++;
+                }
+                case 3: {
+                    return selfPosition.collum--, selfPosition.row;
+                }
+                case 4: {
+                    return selfPosition.collum++, selfPosition.row--;
+                }
+                case 5: {
+                    return selfPosition.collum++, selfPosition.row++;
+                }
+                case 6: {
+                    return selfPosition.collum++, selfPosition.row;
+                }
+                case 7: {
+                    return selfPosition.collum, selfPosition.row++;
+                }
+                case 8: {
+                    return selfPosition.collum, selfPosition.row++;
+                }
+
+            }
+        }
+
+        cycleConditions(roadCells, whileIndex) {
+            return whileIndex < 1;
+
         }
     }
     //#endregion
