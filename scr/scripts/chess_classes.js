@@ -1,5 +1,6 @@
-define(['../../node_modules/lodash/lodash.min',
-    './lib/range'
+define(['./../../node_modules/lodash/lodash.min',
+    './lib/range',
+
 ], function (_, range) {
 
     class ChessPieces {
@@ -18,8 +19,7 @@ define(['../../node_modules/lodash/lodash.min',
         }
         getDirection(index, selfPosition) { }
 
-        checkingСellEnemy() {
-
+        getWhereCanMoves() {//Получение возможных позиций для хода 
             const addToArray = function (selfPosition, whileIndex, roadCells) {
                 if (this.checkForAddToArr(selfPosition, whileIndex, roadCells))
                     this.cellsForMove.push(_.cloneDeep(selfPosition));
@@ -39,75 +39,51 @@ define(['../../node_modules/lodash/lodash.min',
                             break;
                         }
                         addToArray(selfPosition, whileIndex, roadCells);
-
                     }
                     else break;
 
-
-
-                } while (this.cycleConditions(roadCells, whileIndex) || whileIndex > 200)
+                } while (this.cycleConditions(roadCells, whileIndex, i) || whileIndex > 200)
             }
         }
 
-        checkForAddToArr(selfPosition, whileIndex) {
+        checkForAddToArr(selfPosition, whileIndex) {//Проверка на добавление позиции в массив возможных ходов
             return !_.isEqual(selfPosition, this.position);
         }
-        cycleConditions(roadCells, whileIndex) {
-            return !_.isNull(roadCells)
+        cycleConditions(roadCells, whileIndex, index) {//Условие по которому цыкал продолжает выполнятся в getWhereCanMoves
+            return !_.isNull(roadCells);
         }
 
-        move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
-            if (objSelfFigure.color != whoseMove) {
-                console.log('Its not your turn now');
-                return false;
-            }
-
-            let doomSelfFigure = document.querySelector('.selected')
-            let cell = this.cellsForMove.find((item, index, arr)=> _.isEqual(item, positionNewCells))//Поиск разрешенных ходов 
-
-            console.log(this.cellsForMove);
+        checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {//Проверка на возможность хода на клетку
+            if (objSelfFigure.color != whoseMove)
+                throw new Error('Its not your turn now');
+            let cell = this.cellsForMove.find((item, index, arr) => _.isEqual(item, positionNewCells));//Поиск разрешенных ходов 
             if (!_.isUndefined(cell)) {
-                if (objSelfFigure.type == 'king') {//Если ходит король
-                    let possibleMove = arrPieces.some(function (item, index, arr) {//Проверка безопасности поля 
-                        if (item.color != objSelfFigure.color) {
-                            if (item.type == 'pawns') {
-                                let _itemCollum;
-                                if (item.color == 'white')
-                                    _itemCollum = item.position.collum + 1
-                                else
-                                    _itemCollum = item.position.collum - 1
-                                if ((_.isEqual(cell, { collum: _itemCollum, row: item.position.row - 1 }) || _.isEqual(cell, { collum: _itemCollum, row: item.position.row + 1 })))
-                                    return true;
-                            }
-                            else if (item.cellsForMove.some((element) => { return _.isEqual(element, cell) }))
-                                return true;
-
-                            return false;
-                        }
-                    })
-                    if (possibleMove)
-                        return false;
-                }
-                
-                let figureToCell = arrPieces.find((item, index, arr) =>_.isEqual(item.position, cell))//Поиск фигуру на клетке
+                let figureToCell = arrPieces.find((item, index, arr) => _.isEqual(item.position, cell));//Поиск фигуру на клетке
                 if (!_.isUndefined(figureToCell)) {
                     if (figureToCell.color != whoseMove) {
                         eventNewCells.target.remove();
-                        _.remove(arrPieces, figureToCell)
+                        _.remove(arrPieces, figureToCell);
                     }
-                    else return false;
-
+                    else throw new Error('You cant cut down your figure');
                 }
-                //#region  end move
-                eventNewCells.currentTarget.append(doomSelfFigure)
-                objSelfFigure.position = cell;
-                ++objSelfFigure.strokeNumberMoves;//Добавление 1 к сделанных ходо этой фигуры
-                arrPieces.push(objSelfFigure)//Добавление новой фигуры в массив
-                arrPieces.forEach((item, index, arr) => item.checkingСellEnemy());
-                return true;
-                //#endregion
+                return cell;
             }
-            return false;
+            throw new Error('The figure cannot move to the western position');
+        }
+
+        move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
+
+            let doomSelfFigure = document.querySelector('.selected');
+            let cell = this.checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells);
+            eventNewCells.currentTarget.append(doomSelfFigure);//Перемещение
+            //#region properis objSelfFigure
+            _.remove(arrPieces, objSelfFigure);
+            objSelfFigure.position = cell;
+            ++objSelfFigure.strokeNumberMoves;//Добавление 1 к сделанных ходо этой фигуры
+            arrPieces.push(objSelfFigure);//Добавление новой фигуры в массив
+            arrPieces.forEach((item, index, arr) => item.getWhereCanMoves());
+            //#endregion
+
         }
 
     }
@@ -124,7 +100,7 @@ define(['../../node_modules/lodash/lodash.min',
         }
 
         getUrl() {
-            return this.color == 'white' ? 'whitePawn.png' : 'blackPawn.png'
+            return this.color == 'white' ? 'whitePawn.png' : 'blackPawn.png';
         }
 
         getDirection(index, selfPosition) {
@@ -151,22 +127,19 @@ define(['../../node_modules/lodash/lodash.min',
             let figureFront = _.isNull(roadCells.firstChild);
             if ((selfPosition.row == this.position.row) && (figureFront)) {//Если мы двигаемся по горизонтали, то на нашем пути не должно быть других фигур
                 if (this.strokeNumberMoves == 0)//Если это первый ход пешкой, то она может пойти на 2 клетки
-                    return !_.isEqual(selfPosition, this.position)
+                    return !_.isEqual(selfPosition, this.position);
                 else if (whileIndex <= 1)//Если нет, то не больше 1 
                     return !_.isEqual(selfPosition, this.position);
             }
             else if ((selfPosition.row != this.position.row) && (!figureFront) && (whileIndex <= 1)) //Если мы двигаемся не только, то на нашем пути должна быть фигура не дальше 1 клетки 
                 return !_.isEqual(selfPosition, this.position);
-
-
             return false;
         }
 
-        cycleConditions(roadCells, whileIndex) {
+        cycleConditions(roadCells, whileIndex, index) {
             return whileIndex < 2;
         }
     }
-
 
     class Elephant extends ChessPieces {
         constructor(color, { collum, row }) {
@@ -174,7 +147,7 @@ define(['../../node_modules/lodash/lodash.min',
         }
 
         getUrl() {
-            return this.color == 'white' ? 'whiteElephant.png' : 'blackElephant.png'
+            return this.color == 'white' ? 'whiteElephant.png' : 'blackElephant.png';
         }
 
         getDirection(index, selfPosition, roadCells) {
@@ -196,7 +169,6 @@ define(['../../node_modules/lodash/lodash.min',
         }
     }
 
-
     class Rook extends ChessPieces {
 
         constructor(color, { collum, row }) {
@@ -205,7 +177,7 @@ define(['../../node_modules/lodash/lodash.min',
 
         getUrl() {
 
-            return this.color == 'white' ? 'whiteRook.png' : 'blackRook.png'
+            return this.color == 'white' ? 'whiteRook.png' : 'blackRook.png';
         }
 
         getDirection(index, selfPosition, roadCells) {
@@ -236,18 +208,18 @@ define(['../../node_modules/lodash/lodash.min',
 
         getUrl() {
 
-            return this.color == 'white' ? 'whiteHorse.png' : 'blackHorse.png'
+            return this.color == 'white' ? 'whiteHorse.png' : 'blackHorse.png';
         }
 
         getDirection(index, selfPosition, roadCells) {
             if (range.between(1, 2, index))
-                selfPosition.collum += 2
+                selfPosition.collum += 2;
             else if (range.between(3, 4, index))
-                selfPosition.collum -= 2
+                selfPosition.collum -= 2;
             else if (range.between(5, 6, index))
-                selfPosition.row += 2
+                selfPosition.row += 2;
             else if (range.between(7, 8, index))
-                selfPosition.row -= 2
+                selfPosition.row -= 2;
 
             switch (true) {
                 case index == 1 || index == 4: {
@@ -265,7 +237,7 @@ define(['../../node_modules/lodash/lodash.min',
             }
         }
 
-        cycleConditions(roadCells, whileIndex) {
+        cycleConditions(roadCells, whileIndex, index) {
             return whileIndex < 1;
         }
     }
@@ -276,7 +248,7 @@ define(['../../node_modules/lodash/lodash.min',
             this.numberOfChecks = 8;
         }
         getUrl() {
-            return this.color == 'white' ? 'whiteQueen.png' : 'blackQueen.png'
+            return this.color == 'white' ? 'whiteQueen.png' : 'blackQueen.png';
         }
 
         getDirection(index, selfPosition, roadCells) {
@@ -313,14 +285,14 @@ define(['../../node_modules/lodash/lodash.min',
 
     class King extends ChessPieces {
         constructor(color, { collum, row }) {
-            super(color, { collum, row })
+            super(color, { collum, row });
             this.numberOfChecks = 8;
             this.type = 'king';
         }
 
         getUrl() {
 
-            return this.color == 'white' ? 'whiteKing.png' : 'blackKing.png'
+            return this.color == 'white' ? 'whiteKing.png' : 'blackKing.png';
         }
 
         getDirection(index, selfPosition, roadCells) {
@@ -347,24 +319,138 @@ define(['../../node_modules/lodash/lodash.min',
                     return selfPosition.collum, selfPosition.row++;
                 }
                 case 8: {
-                    return selfPosition.collum, selfPosition.row++;
+                    return selfPosition.collum, selfPosition.row--;
+                }
+            }
+        }
+
+        checkForAddToArr(selfPosition, whileIndex, roadCells) {
+            if (this.strokeNumberMoves == 0) {
+                return !_.isEqual(selfPosition, this.position);
+            }
+            else if (whileIndex == 1) return !_.isEqual(selfPosition, this.position);
+        }
+
+        cycleConditions(roadCells, whileIndex, index) {
+            return whileIndex < 5 && range.between(7, 8, index);
+        }
+
+        checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
+            if (objSelfFigure.color != whoseMove)
+                throw new Error('Its not your turn now');
+
+            let cell = this.cellsForMove.find((item, index, arr) => _.isEqual(item, positionNewCells))//Поиск разрешенных ходов 
+            if (!_.isUndefined(cell)) {
+
+                {
+                    let varnishingResult = this.varnishing(objSelfFigure, positionNewCells, arrPieces);
+                    if (!_.isUndefined(varnishingResult))
+                        return varnishingResult;
+                }//Проверка на лакировку
+                this.checkSafetyCell(objSelfFigure, arrPieces, cell);//Проверка на безопасность клетки
+                let figureToCell = arrPieces.find((item, index, arr) => _.isEqual(item.position, cell))//Поиск фигуру на клетке
+                if (!_.isUndefined(figureToCell)) {
+                    if (figureToCell.color != whoseMove) {
+                        eventNewCells.target.remove();
+                        _.remove(arrPieces, figureToCell);
+                    }
+                    else throw new Error('You cant cut down your figure');
+                }
+                return { varnishing: false, cell: cell };
+            }
+            throw new Error('The figure cannot move to the western position');
+        }
+
+        move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
+            let cell = this.checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells);
+            if (!cell.varnishing) {
+                let doomSelfFigure = document.querySelector('.selected');
+                eventNewCells.currentTarget.append(doomSelfFigure);//Перемещение
+            }
+
+            _.remove(arrPieces, objSelfFigure);
+            objSelfFigure.position = cell.cell;
+            ++objSelfFigure.strokeNumberMoves;//Добавление 1 к сделанных ходо этой фигуры
+            arrPieces.push(objSelfFigure);//Добавление новой фигуры в массив
+            arrPieces.forEach((item, index, arr) => item.getWhereCanMoves());
+
+        }
+
+        varnishing(objSelfFigure, positionNewCells, arrPieces) {//Проверка на лакировку
+            if (objSelfFigure.strokeNumberMoves == 0) {
+                let row;
+                if (positionNewCells.row > objSelfFigure.position.row + 1)
+                    row = 8;
+                else if (positionNewCells.row < objSelfFigure.position.row - 1)
+                    row = 1;
+
+                let doomCellRook = document.getElementById(`[${objSelfFigure.position.collum},${row}]`);
+                if (!_.isNull(doomCellRook)) {
+                    let rookObj = arrPieces.find((item, index, arr) => _.isEqual(item.position, { collum: objSelfFigure.position.collum, row: row }));
+                    if (rookObj.strokeNumberMoves == 0) {
+                        let _row = row;
+                        while (_row != objSelfFigure.position.row) {//Проверка на атаки клеток для лакировки 
+                            if (_row > objSelfFigure.position.row)
+                                --_row;
+                            else
+                                ++row;
+                            arrPieces.some(function (item, index, arr) {
+                                console.log(item.position);
+                                item.cellsForMove.forEach(function (ite, inde, array) {
+                                    if (item.color != objSelfFigure.color && _.isEqual(ite, { collum: objSelfFigure.position.collum, row: _row })) {
+                                        throw new Error('Cant varnishing');
+                                    }
+                                })
+                            });
+                        }
+                        let positionForRook = { collum: objSelfFigure.position.collum, row: row == 8 ? 6 : 4 }
+                        let positionForKing = { collum: objSelfFigure.position.collum, row: row == 8 ? 7 : 3 }
+                        let spawner = new PiecesSpawner();
+                        doomCellRook.firstChild.remove();
+                        document.querySelector(`.selected`).remove();
+                        spawner.spawn(objSelfFigure.color, _.assignIn(positionForRook, { step: 1 }), 1, new FactoryRook())
+                        spawner.spawn(objSelfFigure.color, _.assignIn(positionForKing, { step: 1 }), 1, new FactoryKing())
+                        //#region properties rook
+                        _.remove(arrPieces, rookObj);
+                        rookObj.position = positionForRook;
+                        objSelfFigure.position = positionForKing;
+                        ++rookObj.strokeNumberMoves;
+                        arrPieces.push(rookObj);
+                        //#endregion
+                        return { varnishing: true, cell: positionForKing }
+
+                    }
                 }
 
             }
         }
+        checkSafetyCell(objSelfFigure, arrPieces, cell) {//Проверка на безопасность клетки
+            arrPieces.forEach(function (item, index, arr) {
+                if (item.color != objSelfFigure.color) {
+                    if (item.type == 'pawns') {//Проверка для пешек
+                        let _itemCollum;
+                        if (item.color == 'white')
+                            _itemCollum = item.position.collum + 1;
+                        else
+                            _itemCollum = item.position.collum - 1;
+                        if ((_.isEqual(cell, { collum: _itemCollum, row: item.position.row - 1 }) || _.isEqual(cell, { collum: _itemCollum, row: item.position.row + 1 })))
+                            throw new Error('The cells is under attack');
+                    }
+                    else if (item.cellsForMove.some((element) => { return _.isEqual(element, cell) }))//Для остальных
+                        throw new Error('The cells is under attack');
 
-        cycleConditions(roadCells, whileIndex) {
-            return whileIndex < 1;
-
+                }
+            })
         }
+
     }
     //#endregion
 
+
     class PiecesSpawner {
 
-        constructor(cells, color) {
+        constructor() {
 
-            this._cells = cells;
             this.pathChessSprites = './sprites/chess_pieces'
             this.arrPieces = [];
         }
@@ -398,6 +484,58 @@ define(['../../node_modules/lodash/lodash.min',
 
     }
 
+
+    //#region  Factorys
+    class FactoryPawn {
+        constructor() { }
+
+        create(color, { collum, row, step, currenStep }) {
+            return new Pawns(color, { collum, row, step, currenStep });
+        }
+    }
+
+    class FactoryRook {
+        constructor() { }
+
+        create(color, { collum, row, step, currenStep }) {
+            return new Rook(color, { collum, row, step, currenStep });
+        }
+    }
+
+    class FactoryHorse {
+        constructor() { }
+
+        create(color, { collum, row, step, currenStep }) {
+            return new Horse(color, { collum, row, step, currenStep });
+        }
+    }
+
+    class FactoryElephant {
+        constructor() { }
+
+        create(color, { collum, row, step, currenStep }) {
+            return new Elephant(color, { collum, row, step, currenStep });
+        }
+    }
+
+    class FactoryQueen {
+        constructor() { }
+
+        create(color, { collum, row, step, currenStep }) {
+            return new Queen(color, { collum, row, step, currenStep });
+        }
+    }
+
+    class FactoryKing {
+        constructor() { }
+
+        create(color, { collum, row, step, currenStep }) {
+            return new King(color, { collum, row, step, currenStep });
+        }
+    }
+
+    //#endregion
+
     return {
         ChessPieces: ChessPieces,
         Pawns: Pawns,
@@ -406,8 +544,13 @@ define(['../../node_modules/lodash/lodash.min',
         Horse: Horse,
         Queen: Queen,
         King: King,
-        PiecesSpawner: PiecesSpawner
-
-    }
+        PiecesSpawner: PiecesSpawner,
+        FactoryPawn: FactoryPawn,
+        FactoryRook: FactoryRook,
+        FactoryHorse: FactoryHorse,
+        FactoryElephant: FactoryElephant,
+        FactoryQueen: FactoryQueen,
+        FactoryKing: FactoryKing
+    };
 
 });

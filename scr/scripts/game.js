@@ -8,21 +8,17 @@ define([
     class GameStarter {
 
         constructor(color) {
-
-
             if (this.possibleСolors.includes(color)) {
                 this._color = color;
                 this._drawCells();
 
-                this._piecesSpawner = new chessClass.PiecesSpawner(this.cells, color);
+                this._piecesSpawner = new chessClass.PiecesSpawner();
                 if (this._color == 'white')
                     this._drawChessPices('black', 'white')
                 else {
 
                     this._drawChessPices('black', 'white')
                 }
-
-
             }
             else
                 throw Error(`The player's color is only black or white but not ${color}`);
@@ -32,11 +28,9 @@ define([
             return document.querySelector('.main');
         }
 
-
         get possibleСolors() {
             return ['black', 'white'];
         }
-
 
         get color() {
             return this._color;
@@ -45,9 +39,9 @@ define([
         static get chessBoard() {
             return this._piecesSpawner;
         }
-    
+
         //#endregion
-        
+
         _drawCells() {
             //#region  function spawner
             const spawner = function (collumId, collum) {
@@ -97,19 +91,17 @@ define([
         _drawChessPices(selfColor, frandColor) {
             [{ color: frandColor, collum: 1 }, { color: selfColor, collum: 6 }].forEach((item, i, arr) => {
 
-                this._piecesSpawner.spawn(item.color, { collum: item.collum + 1, row: 1, step: 1 }, 8, new FactoryPawn());
+                this._piecesSpawner.spawn(item.color, { collum: item.collum + 1, row: 1, step: 1 }, 8, new chessClass.FactoryPawn());
                 if (i > 0)
                     item.collum = 8;
-                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 1, step: 7 }, 2, new FactoryRook());
-                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 2, step: 5 }, 2, new FactoryHorse());
-                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 3, step: 3 }, 2, new FactoryElephant());
-                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 4, step: 1 }, 1, new FactoryQueen());
-                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 5, step: 1 }, 1, new FactoryKing());
+                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 1, step: 7 }, 2, new chessClass.FactoryRook());
+                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 2, step: 5 }, 2, new chessClass.FactoryHorse());
+                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 3, step: 3 }, 2, new chessClass.FactoryElephant());
+                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 4, step: 1 }, 1, new chessClass.FactoryQueen());
+                this._piecesSpawner.spawn(item.color, { collum: item.collum, row: 5, step: 1 }, 1, new chessClass.FactoryKing());
 
             })
         }//Создание фигур
-
-
     }
 
     class Game extends GameStarter {
@@ -119,7 +111,7 @@ define([
             this._whoseMove = 'white';
             this._createEventsDragovers();
             this._piecesSpawner.arrPieces.forEach((item, index, arr) => {
-                item.checkingСellEnemy()
+                item.getWhereCanMoves()
             });
         }
 
@@ -162,18 +154,10 @@ define([
                     });//Поиск перемещяемой фигуры 
 
                     if (!_.isUndefined(selfFigure)) {
-                        let copySelfFigure = _.cloneDeep(selfFigure);//Копия фигуры 
                         let positionNewCells = convertPositionToObject(eventCellsForNewPosition.currentTarget.id);//Позиция куда идет фигура 
-                        _.remove(this._piecesSpawner.arrPieces, selfFigure)
-                        eventCellsForNewPosition = selfFigure.move(eventCellsForNewPosition, selfFigure, this._whoseMove, this._piecesSpawner.arrPieces, positionNewCells);//Перемещение фигуры 
+                        selfFigure.move(eventCellsForNewPosition, selfFigure, this._whoseMove, this._piecesSpawner.arrPieces, positionNewCells);//Перемещение фигуры 
+                        this._whoseMove = this._whoseMove == 'white' ? 'black' : 'white'
 
-                        if (eventCellsForNewPosition) {//Проверка дошла ли фигура 
-                            this._whoseMove = this._whoseMove == 'white' ? 'black' : 'white'//Смена цвет хода   
-                            return;
-                        }
-                        this._piecesSpawner.arrPieces.push(copySelfFigure);//Возврат старой фигуры в массив
-
-                        throw Error('Chess piece cant reach the selected position')
                     }
                     else throw Error('The selected figure was not found among the other figures')
 
@@ -181,64 +165,10 @@ define([
 
             }
             //#endregion
-
         }
 
-
     }
-
-    //#region  Factorys
-    class FactoryPawn {
-        constructor() { }
-
-        create(color, { collum, row, step, currenStep }) {
-            return new chessClass.Pawns(color, { collum, row, step, currenStep });
-        }
-    }
-
-    class FactoryRook {
-        constructor() { }
-
-        create(color, { collum, row, step, currenStep }) {
-            return new chessClass.Rook(color, { collum, row, step, currenStep });
-        }
-    }
-
-    class FactoryHorse {
-        constructor() { }
-
-        create(color, { collum, row, step, currenStep }) {
-            return new chessClass.Horse(color, { collum, row, step, currenStep });
-        }
-    }
-
-    class FactoryElephant {
-        constructor() { }
-
-        create(color, { collum, row, step, currenStep }) {
-            return new chessClass.Elephant(color, { collum, row, step, currenStep });
-        }
-    }
-
-    class FactoryQueen {
-        constructor() { }
-
-        create(color, { collum, row, step, currenStep }) {
-            return new chessClass.Queen(color, { collum, row, step, currenStep });
-        }
-    }
-
-    class FactoryKing {
-        constructor() { }
-
-        create(color, { collum, row, step, currenStep }) {
-            return new chessClass.King(color, { collum, row, step, currenStep });
-        }
-    }
-
-    //#endregion
 
     return () => { let game = new Game("white") };
-
 
 });

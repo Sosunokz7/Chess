@@ -1,3 +1,3 @@
-require(['game'],function(start){
+require(['./game'],function(start){
     start();
 });
