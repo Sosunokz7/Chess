@@ -12,14 +12,15 @@ define(['./../../node_modules/lodash/lodash.min',
             this.numberOfChecks = 4;//Количество условий для проверки
             this.strokeNumberMoves = 0;//Количество сделанных ходов вибронной фигурой
             this.type = 'figure';
-        }
 
+        }
+        static checkToKing = false;
         position() {
             return this.position;
         }
         getDirection(index, selfPosition) { }
 
-        getWhereCanMoves() {//Получение возможных позиций для хода 
+        getWhereCanMoves(arrPieces) {//Получение возможных позиций для хода 
             const addToArray = function (selfPosition, whileIndex, roadCells) {
                 if (this.checkForAddToArr(selfPosition, whileIndex, roadCells))
                     this.cellsForMove.push(_.cloneDeep(selfPosition));
@@ -31,10 +32,9 @@ define(['./../../node_modules/lodash/lodash.min',
                 do {
                     ++whileIndex;
                     this.getDirection(i, selfPosition);//Алгоритм по которому смотрим как может двигаться фигура 
-                    roadCells = document.getElementById(`[${selfPosition.collum},${selfPosition.row}]`);//Получение клетки на которой мы находимся 
-                    if (!_.isNull(roadCells)) {//Существует ли такая клетка
-
-                        if (!_.isNull(roadCells.firstChild)) {//Есть ли на этой клетке фигура 
+                    if (range.between(1, 8, selfPosition.collum) && range.between(1, 8, selfPosition.row)) {//Существует ли такая клетка
+                        roadCells = _.find(arrPieces, (item) => _.isEqual(item.position, selfPosition))//Поиск фигуры на клетке
+                        if (!_.isUndefined(roadCells)) {//Есть ли на этой клетке фигура 
                             addToArray(selfPosition, whileIndex, roadCells);
                             break;
                         }
@@ -42,15 +42,15 @@ define(['./../../node_modules/lodash/lodash.min',
                     }
                     else break;
 
-                } while (this.cycleConditions(roadCells, whileIndex, i) || whileIndex > 200)
+                } while (this.cycleConditions(true, whileIndex, i) || whileIndex > 200)
             }
         }
 
         checkForAddToArr(selfPosition, whileIndex) {//Проверка на добавление позиции в массив возможных ходов
             return !_.isEqual(selfPosition, this.position);
         }
-        cycleConditions(roadCells, whileIndex, index) {//Условие по которому цыкал продолжает выполнятся в getWhereCanMoves
-            return !_.isNull(roadCells);
+        cycleConditions(cellsExists, whileIndex, index) {//Условие по которому цыкал продолжает выполнятся в getWhereCanMoves
+            return cellsExists;
         }
 
         checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {//Проверка на возможность хода на клетку
@@ -58,6 +58,21 @@ define(['./../../node_modules/lodash/lodash.min',
                 throw new Error('Its not your turn now');
             let cell = this.cellsForMove.find((item, index, arr) => _.isEqual(item, positionNewCells));//Поиск разрешенных ходов 
             if (!_.isUndefined(cell)) {
+                let king = arrPieces.find(item => (item.color == whoseMove) && item.type == 'king');//Поиск короля
+                let cloneObjSelfFigure = _.cloneDeep(objSelfFigure);
+                let figureSamePositions = arrPieces.find((item) => _.isEqual(item.position, cell));//
+                if (!_.isUndefined(figureSamePositions))
+                    _.remove(arrPieces, figureSamePositions);
+                objSelfFigure.position = cell;
+                arrPieces.forEach((item) => item.getWhereCanMoves(arrPieces));//Обновление возможных ходов
+                king.checkSafetyCell(king, arrPieces, king.position);//Проверка исчез ли шах
+                objSelfFigure.position = cloneObjSelfFigure.position;
+                if (!_.isUndefined(figureSamePositions))
+                    arrPieces.push(figureSamePositions);
+                if (ChessPieces.checkToKing) { //Если после хода шах не исчез то ошибка
+                    arrPieces.forEach((item, index, arr) => item.getWhereCanMoves(arrPieces));//Обновление возможных ходов
+                    throw new Error('You are a check you have to close or leave');
+                }
                 let figureToCell = arrPieces.find((item, index, arr) => _.isEqual(item.position, cell));//Поиск фигуру на клетке
                 if (!_.isUndefined(figureToCell)) {
                     if (figureToCell.color != whoseMove) {
@@ -72,7 +87,6 @@ define(['./../../node_modules/lodash/lodash.min',
         }
 
         move(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells) {
-
             let doomSelfFigure = document.querySelector('.selected');
             let cell = this.checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells);
             eventNewCells.currentTarget.append(doomSelfFigure);//Перемещение
@@ -81,11 +95,10 @@ define(['./../../node_modules/lodash/lodash.min',
             objSelfFigure.position = cell;
             ++objSelfFigure.strokeNumberMoves;//Добавление 1 к сделанных ходо этой фигуры
             arrPieces.push(objSelfFigure);//Добавление новой фигуры в массив
-            arrPieces.forEach((item, index, arr) => item.getWhereCanMoves());
+            arrPieces.forEach((item, index, arr) => item.getWhereCanMoves(arrPieces));
             //#endregion
 
         }
-
     }
 
     //#region  Chess
@@ -96,7 +109,6 @@ define(['./../../node_modules/lodash/lodash.min',
         constructor(color, { collum, row }) {
             super(color, { collum, row })
             this.type = 'pawns';
-
         }
 
         getUrl() {
@@ -124,7 +136,7 @@ define(['./../../node_modules/lodash/lodash.min',
 
         }
         checkForAddToArr(selfPosition, whileIndex, roadCells) {
-            let figureFront = _.isNull(roadCells.firstChild);
+            let figureFront = _.isUndefined(roadCells);
             if ((selfPosition.row == this.position.row) && (figureFront)) {//Если мы двигаемся по горизонтали, то на нашем пути не должно быть других фигур
                 if (this.strokeNumberMoves == 0)//Если это первый ход пешкой, то она может пойти на 2 клетки
                     return !_.isEqual(selfPosition, this.position);
@@ -136,7 +148,7 @@ define(['./../../node_modules/lodash/lodash.min',
             return false;
         }
 
-        cycleConditions(roadCells, whileIndex, index) {
+        cycleConditions(cellsExists, whileIndex, index) {
             return whileIndex < 2;
         }
     }
@@ -237,7 +249,7 @@ define(['./../../node_modules/lodash/lodash.min',
             }
         }
 
-        cycleConditions(roadCells, whileIndex, index) {
+        cycleConditions(cellsExists, whileIndex, index) {
             return whileIndex < 1;
         }
     }
@@ -291,7 +303,6 @@ define(['./../../node_modules/lodash/lodash.min',
         }
 
         getUrl() {
-
             return this.color == 'white' ? 'whiteKing.png' : 'blackKing.png';
         }
 
@@ -331,7 +342,7 @@ define(['./../../node_modules/lodash/lodash.min',
             else if (whileIndex == 1) return !_.isEqual(selfPosition, this.position);
         }
 
-        cycleConditions(roadCells, whileIndex, index) {
+        cycleConditions(cellsExists, whileIndex, index) {
             return whileIndex < 5 && range.between(7, 8, index);
         }
 
@@ -348,6 +359,7 @@ define(['./../../node_modules/lodash/lodash.min',
                         return varnishingResult;
                 }//Проверка на лакировку
                 this.checkSafetyCell(objSelfFigure, arrPieces, cell);//Проверка на безопасность клетки
+                this.checkSafetyCell(objSelfFigure, arrPieces, objSelfFigure.position);
                 let figureToCell = arrPieces.find((item, index, arr) => _.isEqual(item.position, cell))//Поиск фигуру на клетке
                 if (!_.isUndefined(figureToCell)) {
                     if (figureToCell.color != whoseMove) {
@@ -367,24 +379,23 @@ define(['./../../node_modules/lodash/lodash.min',
                 let doomSelfFigure = document.querySelector('.selected');
                 eventNewCells.currentTarget.append(doomSelfFigure);//Перемещение
             }
-
             _.remove(arrPieces, objSelfFigure);
             objSelfFigure.position = cell.cell;
             ++objSelfFigure.strokeNumberMoves;//Добавление 1 к сделанных ходо этой фигуры
             arrPieces.push(objSelfFigure);//Добавление новой фигуры в массив
-            arrPieces.forEach((item, index, arr) => item.getWhereCanMoves());
+            arrPieces.forEach((item, index, arr) => item.getWhereCanMoves(arrPieces));
 
         }
 
         varnishing(objSelfFigure, positionNewCells, arrPieces) {//Проверка на лакировку
             if (objSelfFigure.strokeNumberMoves == 0) {
                 let row;
+                let doomCellRook;
                 if (positionNewCells.row > objSelfFigure.position.row + 1)
                     row = 8;
                 else if (positionNewCells.row < objSelfFigure.position.row - 1)
                     row = 1;
-
-                let doomCellRook = document.getElementById(`[${objSelfFigure.position.collum},${row}]`);
+                doomCellRook = document.getElementById(`[${objSelfFigure.position.collum},${row}]`);
                 if (!_.isNull(doomCellRook)) {
                     let rookObj = arrPieces.find((item, index, arr) => _.isEqual(item.position, { collum: objSelfFigure.position.collum, row: row }));
                     if (rookObj.strokeNumberMoves == 0) {
@@ -395,7 +406,6 @@ define(['./../../node_modules/lodash/lodash.min',
                             else
                                 ++row;
                             arrPieces.some(function (item, index, arr) {
-                                console.log(item.position);
                                 item.cellsForMove.forEach(function (ite, inde, array) {
                                     if (item.color != objSelfFigure.color && _.isEqual(ite, { collum: objSelfFigure.position.collum, row: _row })) {
                                         throw new Error('Cant varnishing');
@@ -425,6 +435,7 @@ define(['./../../node_modules/lodash/lodash.min',
             }
         }
         checkSafetyCell(objSelfFigure, arrPieces, cell) {//Проверка на безопасность клетки
+            ChessPieces.checkToKing = false;
             arrPieces.forEach(function (item, index, arr) {
                 if (item.color != objSelfFigure.color) {
                     if (item.type == 'pawns') {//Проверка для пешек
@@ -433,15 +444,25 @@ define(['./../../node_modules/lodash/lodash.min',
                             _itemCollum = item.position.collum + 1;
                         else
                             _itemCollum = item.position.collum - 1;
-                        if ((_.isEqual(cell, { collum: _itemCollum, row: item.position.row - 1 }) || _.isEqual(cell, { collum: _itemCollum, row: item.position.row + 1 })))
+                        if ((_.isEqual(cell, { collum: _itemCollum, row: item.position.row - 1 }) || _.isEqual(cell, { collum: _itemCollum, row: item.position.row + 1 }))) {
+                            if (_.isEqual(objSelfFigure.position, cell) && !ChessPieces.checkToKing)
+                                ChessPieces.checkToKing = true;
+                            else
+                                throw new Error('The cells is under attack');
+                        }
+                    }
+                    else if (item.cellsForMove.some((element) => { return _.isEqual(element, cell) })) {//Для остальных
+                        if (_.isEqual(objSelfFigure.position, cell))
+                            ChessPieces.checkToKing = true;
+                        else
                             throw new Error('The cells is under attack');
                     }
-                    else if (item.cellsForMove.some((element) => { return _.isEqual(element, cell) }))//Для остальных
-                        throw new Error('The cells is under attack');
+
 
                 }
             })
         }
+
 
     }
     //#endregion
@@ -465,12 +486,9 @@ define(['./../../node_modules/lodash/lodash.min',
                     chess_pice = name.create(color, { collum, row: i + 1, step, currenStep });
                 else
                     chess_pice = name.create(color, { collum, row: row + currenStep, step, currenStep });
-
                 this.arrPieces.push(chess_pice);
                 currenStep = this._inntrChessPiceToHtml({ collum, row, currenStep, step }, chess_pice.getUrl(), color);
-
             }
-
         }
         _checkingBeforeSpawning({ collum, row, step }, quantity) {
             if (row + quantity > 9)
@@ -483,7 +501,6 @@ define(['./../../node_modules/lodash/lodash.min',
         }
 
     }
-
 
     //#region  Factorys
     class FactoryPawn {
