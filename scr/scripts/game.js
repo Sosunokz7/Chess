@@ -96,10 +96,9 @@ define([
                 let rowForQueen, rowForKing;
                 if (this.color == 'white')
                     rowForQueen = 4, rowForKing = 5
-
                 else
                     rowForQueen = 5, rowForKing = 4
-
+                    
                 this._piecesSpawner.spawn(item.color, { collum: item.collum, row: rowForQueen, step: 1 }, 1, new chessClass.FactoryQueen());
                 this._piecesSpawner.spawn(item.color, { collum: item.collum, row: rowForKing, step: 1 }, 1, new chessClass.FactoryKing());
 

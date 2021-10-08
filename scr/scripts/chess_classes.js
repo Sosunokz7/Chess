@@ -105,7 +105,6 @@ define(['./../../node_modules/lodash/lodash.min',
 
     class Pawns extends ChessPieces {
 
-
         constructor(color, { collum, row }) {
             super(color, { collum, row })
             this.type = 'pawns';
@@ -135,6 +134,7 @@ define(['./../../node_modules/lodash/lodash.min',
 
 
         }
+
         checkForAddToArr(selfPosition, whileIndex, roadCells) {
             let figureFront = _.isUndefined(roadCells);
             if ((selfPosition.row == this.position.row) && (figureFront)) {//Если мы двигаемся по горизонтали, то на нашем пути не должно быть других фигур
@@ -219,7 +219,6 @@ define(['./../../node_modules/lodash/lodash.min',
         }
 
         getUrl() {
-
             return this.color == 'white' ? 'whiteHorse.png' : 'blackHorse.png';
         }
 
@@ -404,7 +403,7 @@ define(['./../../node_modules/lodash/lodash.min',
                             if (_row > objSelfFigure.position.row)
                                 --_row;
                             else
-                                ++row;
+                                ++_row;
                             arrPieces.some(function (item, index, arr) {
                                 item.cellsForMove.forEach(function (ite, inde, array) {
                                     if (item.color != objSelfFigure.color && _.isEqual(ite, { collum: objSelfFigure.position.collum, row: _row })) {
@@ -462,8 +461,6 @@ define(['./../../node_modules/lodash/lodash.min',
                 }
             })
         }
-
-
     }
     //#endregion
 
@@ -569,5 +566,4 @@ define(['./../../node_modules/lodash/lodash.min',
         FactoryQueen: FactoryQueen,
         FactoryKing: FactoryKing
     };
-
 });
