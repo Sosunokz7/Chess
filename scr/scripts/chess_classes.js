@@ -376,6 +376,7 @@ define(['./../../node_modules/lodash/lodash.min',
             let cell = this.checkingBeforeMove(eventNewCells, objSelfFigure, whoseMove, arrPieces, positionNewCells);
             if (!cell.varnishing) {
                 let doomSelfFigure = document.querySelector('.selected');
+                console.log(doomSelfFigure);
                 eventNewCells.currentTarget.append(doomSelfFigure);//Перемещение
             }
             _.remove(arrPieces, objSelfFigure);
@@ -417,8 +418,11 @@ define(['./../../node_modules/lodash/lodash.min',
                         let spawner = new PiecesSpawner();
                         doomCellRook.firstChild.remove();
                         document.querySelector(`.selected`).remove();
-                        spawner.spawn(objSelfFigure.color, _.assignIn(positionForRook, { step: 1 }), 1, new FactoryRook())
-                        spawner.spawn(objSelfFigure.color, _.assignIn(positionForKing, { step: 1 }), 1, new FactoryKing())
+                        document.querySelector('.positionBeforeMoving').classList.remove('positionBeforeMoving');
+
+                        spawner.spawn(objSelfFigure.color, { collum: positionForRook.collum, row: positionForRook.row, step: 1 }, 1, new FactoryRook());
+                        spawner.spawn(objSelfFigure.color, { collum: positionForKing.collum, row: positionForKing.row, step: 1 }, 1, new FactoryKing());
+
                         //#region properties rook
                         _.remove(arrPieces, rookObj);
                         rookObj.position = positionForRook;
@@ -493,7 +497,20 @@ define(['./../../node_modules/lodash/lodash.min',
         }
 
         _inntrChessPiceToHtml({ collum, row, currenStep, step }, urlName, color) {
+
             document.getElementById(`[${collum},${row + currenStep}]`).innerHTML += `<div class='chess_img ${color}'  id=${urlName.substring(0, urlName.indexOf('.'))} style='background-image:url(${this.pathChessSprites}/${urlName});' draggable ='true'></div>`;
+
+            //#region  drag event for FIGURE
+            let ls = document.getElementById(`[${collum},${row + currenStep}]`).firstChild;
+            ls.addEventListener('dragstart', (event) => {
+                console.clear();
+                event.target.classList.add('selected');
+            });
+
+            ls.addEventListener('dragend', (event) => {
+                event.target.classList.remove('selected');
+            });
+            //#endregion 
             return currenStep + step;
         }
 

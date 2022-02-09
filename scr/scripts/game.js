@@ -118,20 +118,6 @@ define([
         }
 
         _createEventsDragovers() {
-            //#region  drag event for FIGURE
-            let ls = document.querySelectorAll('.chess_img');
-            for (const value of ls) {//Для фигур
-
-                value.addEventListener('dragstart', (event) => {
-                    console.clear();
-                    event.target.classList.add('selected');
-                });
-
-                value.addEventListener('dragend', (event) => {
-                    event.target.classList.remove('selected');
-                });
-            }
-            //#endregion        
             //#region  drag event for CELLS
             for (const value of this.cells) {//Для клеток 
 
@@ -150,7 +136,8 @@ define([
                 value.addEventListener('drop', (eventCellsForNewPosition) => {
                     let startingPosition = document.querySelector('.positionBeforeMoving');//Позция до перемещение   
                     let positionBeforeMoving = convertPositionToObject(startingPosition.id);
-
+                    console.log(positionBeforeMoving)
+                    console.log(this._piecesSpawner.arrPieces);
                     let selfFigure = this._piecesSpawner.arrPieces.find((item, index, arr) => {
                         return _.isEqual(item.position, positionBeforeMoving)
                     });//Поиск перемещяемой фигуры 
